@@ -25,6 +25,9 @@ public class StudentService {
     }
 
     public Student editStudent(Student student) {
+        if (studentRepository.findById(student.getId()).orElse(null) == null) {
+            return null;
+        }
         return studentRepository.save(student);
     }
 
@@ -40,17 +43,11 @@ public class StudentService {
         return studentRepository.findByAgeBetween(min, max);
     }
 
-    ;
-
-    public String getStudentFaculty(long id) {
+    public Faculty getStudentFaculty(long id) {
         Student student = findStudent(id);
         if (student == null) {
             return null;
         }
-        Faculty faculty = student.getFaculty();
-        if (faculty == null) {
-            return null;
-        }
-        return faculty.getName();
+        return student.getFaculty();
     }
 }

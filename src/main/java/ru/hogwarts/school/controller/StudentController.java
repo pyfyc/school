@@ -2,6 +2,7 @@ package ru.hogwarts.school.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.hogwarts.school.model.Faculty;
 import ru.hogwarts.school.model.Student;
 import ru.hogwarts.school.service.StudentService;
 
@@ -25,8 +26,8 @@ public class StudentController {
         return ResponseEntity.ok(student);
     }
 
-    @GetMapping("/age/{age}") // GET http://localhost:8080/student/age/25
-    public ResponseEntity<Collection<Student>> getStudentsByAge(@PathVariable Integer age) {
+    @GetMapping("/age") // GET http://localhost:8080/student/age/25
+    public ResponseEntity<Collection<Student>> getStudentsByAge(@RequestParam Integer age) {
         return ResponseEntity.ok(studentService.getStudentsByAge(age));
     }
 
@@ -38,7 +39,7 @@ public class StudentController {
     }
 
     @GetMapping("/faculty/{id}") // GET http://localhost:8080/student/faculty/5
-    public ResponseEntity<String> getStudentFaculty(@PathVariable Long id) {
+    public ResponseEntity<Faculty> getStudentFaculty(@PathVariable Long id) {
         return ResponseEntity.ok(studentService.getStudentFaculty(id));
     }
 
@@ -49,11 +50,7 @@ public class StudentController {
 
     @PutMapping // PUT http://localhost:8080/student
     public ResponseEntity<Student> editStudent(@RequestBody Student student) {
-        Student foundStudent = studentService.editStudent(student);
-        if (foundStudent == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(foundStudent);
+        return ResponseEntity.ok(studentService.editStudent(student));
     }
 
     @DeleteMapping("{id}") // DELETE http://localhost:8080/student/5
