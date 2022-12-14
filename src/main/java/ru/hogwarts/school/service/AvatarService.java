@@ -1,8 +1,13 @@
 package ru.hogwarts.school.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import ru.hogwarts.school.exception.AvatarNotFoundException;
+import ru.hogwarts.school.exception.FileIsTooBigException;
+import ru.hogwarts.school.exception.StudentNotFoundException;
 import ru.hogwarts.school.model.Avatar;
 import ru.hogwarts.school.model.Student;
 import ru.hogwarts.school.repository.AvatarRepository;
@@ -14,13 +19,14 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 @Service
 @Transactional
 public class AvatarService {
-
+    private final int avatarFileSizeLimit = 300; // Kb
     @Value("${students.avatar.dir.path}")
     private String avatarsDir;
 
@@ -33,7 +39,15 @@ public class AvatarService {
     }
 
     public void uploadAvatar(Long studentId, MultipartFile file) throws IOException {
+        if (file.getSize() > 1024 * avatarFileSizeLimit) {
+            throw new FileIsTooBigException(avatarFileSizeLimit);
+        }
+
         Student student = studentService.findStudent(studentId);
+
+        if (student == null) {
+            throw new StudentNotFoundException(studentId);
+        }
 
         // Save avatar file to local disk
         Path filePath = Path.of(avatarsDir, studentId + "." + getExtension(file.getOriginalFilename()));
@@ -49,6 +63,9 @@ public class AvatarService {
 
         // Save avatar preview (smaller copy) to database
         Avatar avatar = findStudentAvatar(studentId);
+        if (avatar == null) {
+            avatar = new Avatar();
+        }
         avatar.setStudent(student);
         avatar.setFilePath(filePath.toString());
         avatar.setFileSize(file.getSize());
@@ -59,7 +76,20 @@ public class AvatarService {
     }
 
     public Avatar findStudentAvatar(Long studentId) {
-        return avatarRepository.findByStudentId(studentId).orElse(new Avatar());
+        Avatar avatar = avatarRepository.findByStudentId(studentId).orElse(null);
+        if (avatar == null) {
+            throw new AvatarNotFoundException(studentId);
+        }
+        return avatar;
+    }
+
+    public ResponseEntity<Collection<Avatar>> findByPagination(int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page - 1, size);
+        Collection<Avatar> avatars = avatarRepository.findAll(pageRequest).getContent();
+        if (avatars.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(avatars);
     }
 
     // Generate smaller copy (100 x 100 pixels) of the avatar file.
