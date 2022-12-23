@@ -1,5 +1,7 @@
 package ru.hogwarts.school.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
@@ -32,13 +34,17 @@ public class AvatarService {
 
     private final StudentService studentService;
     private final AvatarRepository avatarRepository;
+    Logger logger = LoggerFactory.getLogger(AvatarService.class);
 
     public AvatarService(StudentService studentService, AvatarRepository avatarRepository) {
+        logger.debug("Calling constructor AvatarService");
         this.studentService = studentService;
         this.avatarRepository = avatarRepository;
     }
 
     public void uploadAvatar(Long studentId, MultipartFile file) throws IOException {
+        logger.debug("Calling method uploadAvatar (studentId = {})", studentId);
+
         if (file.getSize() > 1024 * avatarFileSizeLimit) {
             throw new FileIsTooBigException(avatarFileSizeLimit);
         }
@@ -76,6 +82,7 @@ public class AvatarService {
     }
 
     public Avatar findStudentAvatar(Long studentId) {
+        logger.debug("Calling method findStudentAvatar (studentId = {})", studentId);
         Avatar avatar = avatarRepository.findByStudentId(studentId).orElse(null);
         if (avatar == null) {
             throw new AvatarNotFoundException(studentId);
@@ -84,6 +91,8 @@ public class AvatarService {
     }
 
     public ResponseEntity<Collection<Avatar>> findByPagination(int page, int size) {
+        logger.debug("Calling method findByPagination (page = {}, size = {})", page, size);
+
         PageRequest pageRequest = PageRequest.of(page - 1, size);
         Collection<Avatar> avatars = avatarRepository.findAll(pageRequest).getContent();
         if (avatars.isEmpty()) {
