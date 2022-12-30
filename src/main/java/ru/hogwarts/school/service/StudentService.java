@@ -101,4 +101,55 @@ public class StudentService {
                 .average()
                 .orElse(Double.NaN);
     }
+
+    public void echoAllStudentNames() {
+        List<String> names = studentRepository.findAll().stream()
+                .map(user -> user.getName())
+                .collect(Collectors.toList());
+
+        printToConsole(names.get(0));
+        printToConsole(names.get(1));
+
+        new Thread(() -> {
+            printToConsole(names.get(2));
+            printToConsole(names.get(3));
+        }).start();
+
+        new Thread(() -> {
+            printToConsole(names.get(4));
+            printToConsole(names.get(5));
+        }).start();
+    }
+
+    public void echoAllStudentNamesSync() {
+        List<String> names = studentRepository.findAll().stream()
+                .map(user -> user.getName())
+                .collect(Collectors.toList());
+
+        printToConsoleSync(names.get(0));
+        printToConsoleSync(names.get(1));
+
+        new Thread(() -> {
+            printToConsoleSync(names.get(2));
+            printToConsoleSync(names.get(3));
+        }).start();
+
+        new Thread(() -> {
+            printToConsoleSync(names.get(4));
+            printToConsoleSync(names.get(5));
+        }).start();
+    }
+
+    private void printToConsole(String str) {
+        System.out.println(str);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private synchronized void printToConsoleSync(String str) {
+        System.out.println(str);
+    }
 }
