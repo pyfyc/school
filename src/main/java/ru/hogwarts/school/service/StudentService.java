@@ -20,6 +20,8 @@ public class StudentService {
 
     private final Logger logger = LoggerFactory.getLogger(StudentService.class);
 
+    private int threadSyncCounter = 0;
+
     public StudentService(StudentRepository studentRepository) {
         logger.debug("Calling constructor StudentService");
         this.studentRepository = studentRepository;
@@ -110,15 +112,24 @@ public class StudentService {
         printToConsole(names.get(0));
         printToConsole(names.get(1));
 
-        new Thread(() -> {
+        Thread thread1 = new Thread(() -> {
             printToConsole(names.get(2));
             printToConsole(names.get(3));
-        }).start();
+        });
+        thread1.start();
 
-        new Thread(() -> {
+        Thread thread2 = new Thread(() -> {
             printToConsole(names.get(4));
             printToConsole(names.get(5));
-        }).start();
+        });
+        thread2.start();
+
+        // Waiting for other threads to complete
+        joinThread(thread1);
+        joinThread(thread2);
+
+        // Print the final separator line
+        System.out.println("-----");
     }
 
     public void echoAllStudentNamesSync() {
@@ -126,18 +137,27 @@ public class StudentService {
                 .map(user -> user.getName())
                 .collect(Collectors.toList());
 
-        printToConsoleSync(names.get(0));
-        printToConsoleSync(names.get(1));
+        printToConsoleSync(names);
+        printToConsoleSync(names);
 
-        new Thread(() -> {
-            printToConsoleSync(names.get(2));
-            printToConsoleSync(names.get(3));
-        }).start();
+        Thread thread1 = new Thread(() -> {
+            printToConsoleSync(names);
+            printToConsoleSync(names);
+        });
+        thread1.start();
 
-        new Thread(() -> {
-            printToConsoleSync(names.get(4));
-            printToConsoleSync(names.get(5));
-        }).start();
+        Thread thread2 = new Thread(() -> {
+            printToConsoleSync(names);
+            printToConsoleSync(names);
+        });
+        thread2.start();
+
+        // Waiting for other threads to complete
+        joinThread(thread1);
+        joinThread(thread2);
+
+        // Print the final separator line
+        System.out.println("-----");
     }
 
     private void printToConsole(String str) {
@@ -149,7 +169,19 @@ public class StudentService {
         }
     }
 
-    private synchronized void printToConsoleSync(String str) {
-        System.out.println(str);
+    private synchronized void printToConsoleSync(List<String> names) {
+        System.out.println(names.get(threadSyncCounter));
+        threadSyncCounter++;
+    }
+
+    // Wait for other thread to complete
+    private void joinThread(Thread thread) {
+        if (thread.isAlive()) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }
